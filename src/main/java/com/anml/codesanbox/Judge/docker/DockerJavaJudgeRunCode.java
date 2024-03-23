@@ -1,7 +1,9 @@
 package com.anml.codesanbox.Judge.docker;
 
+import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.json.JSONUtil;
 import com.anml.codesanbox.Judge.CodeJudeQuery;
 import com.anml.codesanbox.Judge.CodeJudgeResponse;
@@ -9,6 +11,7 @@ import com.anml.codesanbox.Judge.java.BasicJavaJudgeTemplate;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.*;
+import com.github.dockerjava.api.exception.BadRequestException;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
@@ -22,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
@@ -154,8 +158,13 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
     @Override
     public void runCode(String parentFilepath, CodeJudeQuery codeJudeQuery, CodeJudgeResponse codeJudgeResponse) {
 
-        DockerClient dockerClient = staticDockerClient;
 
+        if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1024*1024))<0){
+            throw new BadRequestException("Status 400: Minimum memory limit allowed is 6MB");
+        }
+
+
+        DockerClient dockerClient = staticDockerClient;
         String image = "openjdk:8-alpine";
         if (FIRST_INIT){
             PullImageCmd pullImageCmd = staticDockerClient.pullImageCmd(image);
@@ -183,8 +192,12 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
         hostConfig.withCpuCount(1L);
         hostConfig.withReadonlyRootfs(true);
         hostConfig.setBinds(new Bind(CODE_TEMP_PATH,new Volume("/app")));
-        CreateContainerCmd javaRunContainer = cmd.withHostConfig(hostConfig).withNetworkDisabled(true).withAttachStdin(true).withAttachStdout(true)
-                .withAttachStderr(true).withTty(true);
+        CreateContainerCmd javaRunContainer = cmd.withHostConfig(hostConfig)
+                .withNetworkDisabled(true)
+                .withAttachStdin(true)
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .withTty(true);
 
         CreateContainerResponse exec = javaRunContainer.exec();
 
@@ -194,50 +207,126 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
 
         dockerClient.startContainerCmd(containerId).exec();
 
+
+
+        List<ExecuteMessage> executeMessageList = new CopyOnWriteArrayList<>();
+
+
         for (String inputStr : codeJudeQuery.getInputList()) {
+
+            final Long[] maxMemory = {0L};
+
+            final boolean[] unFinish = {true};
 //            String[] inputList = new String[]{"1","2"};
             String[] inputList = inputStr.split(" ");
             List<String> commandStr = getCommandStr(parentFilepath, Arrays.asList(inputList));
 
             System.out.println("执行命令："+commandStr);
-            ExecCreateCmdResponse exec1 = dockerClient.execCreateCmd(containerId).withTty(true).withCmd(commandStr.toArray(new String[0])).withTty(true).withAttachStdin(true).withAttachStdout(true)
-                    .withAttachStderr(true).exec();
-
+            ExecCreateCmdResponse exec1 = dockerClient.execCreateCmd(containerId)
+//                    .withTty(true)
+                    .withCmd(commandStr.toArray(new String[0]))
+                    .withAttachStdin(true)
+                    .withAttachStdout(true)
+                    .withAttachStderr(true)
+                    .exec();
             System.out.println("创建了执行命令");
+            ExecuteMessage message=new ExecuteMessage();
+            message.setMessage("");
+            message.setErrMessage("");
+
+
+
+            StatsCmd statsCmd = dockerClient.statsCmd(containerId);
+
+            statsCmd.exec(new ResultCallback<Statistics>() {
+                @Override
+                public void onStart(Closeable closeable) {
+
+                }
+
+                @Override
+                public void onNext(Statistics statistics) {
+                    System.out.println("内存占用情况: " + statistics.getMemoryStats().getUsage());
+//                    maxMemory[0] = Math.max(statistics.getMemoryStats().getUsage(), maxMemory[0]);
+                    maxMemory[0]=statistics.getMemoryStats().getUsage();
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+
+                }
+
+                @Override
+                public void onComplete() {
+
+                }
+
+                @Override
+                public void close() throws IOException {
+
+                }
+            }).onComplete();
+            statsCmd.close();
+
+
+
+            StopWatch stopWatch = new StopWatch(inputStr);
+
             ExecStartResultCallback execStartResultCallback = new ExecStartResultCallback(){
                 @Override
                 public void onNext(Frame frame) {
 //                    System.out.println("执行结果："+new String(frame.getPayload()));
                     if (frame.getStreamType().equals(StreamType.STDERR)) {
                         //错误信息
-                        ExecuteMessage message=new ExecuteMessage();
-                        message.setErrMessage(new String(frame.getPayload()));
-                        codeJudgeResponse.addExecuteMessage(message);
+                        message.setErrMessage(message.getErrMessage()+new String(frame.getPayload()));
+
                     }
                     else {
                         //正常信息
-                        ExecuteMessage message=new ExecuteMessage();
-                        message.setMessage(new String(frame.getPayload()));
-                        codeJudgeResponse.addExecuteMessage(message);
+                        message.setMessage(message.getMessage()+new String(frame.getPayload()));
                     }
+                    unFinish[0] =false;
                     super.onNext(frame);
+                }
+
+                @Override
+                public void onComplete() {
+                    unFinish[0]=false;
+                    stopWatch.stop();
+                    super.onComplete();
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                    System.out.println("callbackonError:"+throwable.getMessage());
+                }
+
+                @Override
+                public void onStart(Closeable stream) {
+                    stopWatch.start();
+                    super.onStart(stream);
                 }
             };
             try {
+
                 boolean flag = dockerClient.execStartCmd(exec1.getId()).exec(execStartResultCallback).awaitCompletion(codeJudeQuery.getTimeLimit(), TimeUnit.MILLISECONDS);
-                if(!flag){
-                    ExecuteMessage message=new ExecuteMessage();
+
+                if(!flag&&unFinish[0]){
                     //错误信息
                     message.setErrMessage("执行失败：超时");
-                    codeJudgeResponse.addExecuteMessage(message);
+                    stopWatch.stop();
                 }
+                message.setExecuteTime(stopWatch.getTotalTimeMillis());
+                message.setMemoryUsage(maxMemory[0]/1024);
+                executeMessageList.add(message);
             } catch (InterruptedException e) {
-                ExecuteMessage message=new ExecuteMessage();
+
                 //错误信息
                 message.setErrMessage("执行失败");
-                codeJudgeResponse.addExecuteMessage(message);
+                executeMessageList.add(message);
             }
         }
+        codeJudgeResponse.setExecuteMessageList(executeMessageList);
         dockerClient.removeContainerCmd(containerId).withForce(true).exec();
 
     }

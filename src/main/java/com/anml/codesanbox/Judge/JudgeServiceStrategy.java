@@ -16,7 +16,7 @@ public class JudgeServiceStrategy {
     }
 
     public   static JudgeService getJudgeService(JudgeTypeEnum byType) {
-        System.out.println("使用"+ byType.getType()+"方式运行代码");
+        System.out.println("使用"+ byType.getZhType()+"方式运行代码");
         switch (byType){
             case Docker:
                 return new DockerJavaJudgeRunCode();

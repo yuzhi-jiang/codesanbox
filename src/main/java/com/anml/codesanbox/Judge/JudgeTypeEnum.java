@@ -18,6 +18,9 @@ public enum JudgeTypeEnum {
         return type;
     }
 
+    public String getZhType() {
+        return ZhType;
+    }
 
     //根据 type 获取枚举
 

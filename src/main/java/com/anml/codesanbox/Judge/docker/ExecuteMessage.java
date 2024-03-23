@@ -7,6 +7,12 @@ public class ExecuteMessage {
     String message;
     String errMessage;
 
+
+    Long executeTime;
+    Long memoryUsage;
+
+
+
     public ExecuteMessage() {
     }
 

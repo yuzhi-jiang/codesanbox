@@ -34,7 +34,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
              BufferedReader bufferedReader = new BufferedReader(inputReader)) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                outDat.append(line);
+                outDat.append(line).append("\n");
 
             }
         } catch (IOException e) {
@@ -67,13 +67,13 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         String compileClass = null;
         try {
             compileClass = compileCode(query.getCode());
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             codeJudgeResponse.setCode(501);
-            codeJudgeResponse.setError("编译错误");
+            codeJudgeResponse.setError("编译错误"+e.getMessage());
             return codeJudgeResponse;
         }
 
-
+        codeJudgeResponse.setCode(200);
         //执行代码
         runCode(compileClass, query, codeJudgeResponse);
 
@@ -157,8 +157,12 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         String compileExec = String.format("javac -encoding utf-8 %s%sMain.java", parentPath,File.separator);
 
         Process process = Runtime.getRuntime().exec( compileExec );
+        InputStream errorStream = process.getErrorStream();
+        String reader = reader(errorStream);
         int exitCode = process.waitFor();
         if(exitCode!=0){
+            System.out.println("reader:");
+            System.out.println(reader);
             throw new RuntimeException("编译失败");
         }
         return parentFilepath.toString();
