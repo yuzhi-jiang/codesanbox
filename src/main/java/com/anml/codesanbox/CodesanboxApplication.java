@@ -12,13 +12,13 @@ import org.springframework.context.annotation.Bean;
 public class CodesanboxApplication {
 
     public static void main(String[] args) {
-        connectDocker();
+        dockerClient();
         SpringApplication.run(CodesanboxApplication.class, args);
     }
 
     @Bean
-    public static DockerClient connectDocker(){
-        DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://ip:2375").build();
+    public static DockerClient dockerClient(){
+        DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://127.0.0.1:2375").build();
         Info info = dockerClient.infoCmd().exec();
         String infoStr = JSONUtil.toJsonStr(info);
         System.out.println("docker的环境信息如下：=================");

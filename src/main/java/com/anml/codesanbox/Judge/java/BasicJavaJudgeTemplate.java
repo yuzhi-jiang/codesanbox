@@ -11,6 +11,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -29,18 +30,18 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
     private static Logger logger = LoggerFactory.getLogger(BasicJavaJudgeTemplate.class);
     protected static final String CODE_TEMP_PATH=System.getProperty("user.dir")+File.separator+"codeTempPath";
     private static String reader(InputStream input) {
-        StringBuilder outDat = new StringBuilder();
+        List<String> outDat=new ArrayList<>();
         try (InputStreamReader inputReader = new InputStreamReader(input, StandardCharsets.UTF_8);
              BufferedReader bufferedReader = new BufferedReader(inputReader)) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
-                outDat.append(line).append("\n");
+                outDat.add(line);
 
             }
         } catch (IOException e) {
             logger.error("command :  ,exception", e);
         }
-        return outDat.toString();
+        return String.join("\n",outDat);
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -61,25 +62,34 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         // 3. 执行编译
         // 4. 执行代码
         // 5. 返回结果
-        CodeJudgeResponse codeJudgeResponse = new CodeJudgeResponse();
-
-        //编译代码
+        CodeJudgeResponse codeJudgeResponse = null;
         String compileClass = null;
         try {
-            compileClass = compileCode(query.getCode());
+            codeJudgeResponse = new CodeJudgeResponse();
+
+            //编译代码
+            compileClass = null;
+            try {
+                compileClass = compileCode(query.getCode());
+            } catch (Exception e) {
+                codeJudgeResponse.setCode(501);
+                codeJudgeResponse.setError("编译错误"+e.getMessage());
+                return codeJudgeResponse;
+            }
+
+            codeJudgeResponse.setCode(200);
+            //执行代码
+            runCode(compileClass, query, codeJudgeResponse);
         } catch (Exception e) {
-            codeJudgeResponse.setCode(501);
-            codeJudgeResponse.setError("编译错误"+e.getMessage());
-            return codeJudgeResponse;
+            throw new RuntimeException(e);
+        }finally {
+            //delete file compileClass
+            FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
         }
 
-        codeJudgeResponse.setCode(200);
-        //执行代码
-        runCode(compileClass, query, codeJudgeResponse);
 
-        //delete file compileClass
-        FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
-
+//        System.out.println("judeinfo");
+//        System.out.println(codeJudgeResponse);
         return codeJudgeResponse;
     }
 
@@ -143,8 +153,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         UUID parentFilepath = UUID.randomUUID();
         String parentPath = CODE_TEMP_PATH+File.separator+ parentFilepath;
 
-        String fileName= "Main.java";
-        if(!FileUtil.exist(parentPath)){
+        String fileName= "Main.java";        if(!FileUtil.exist(parentPath)){
             FileUtil.mkdir(parentPath);
         }
         File file = FileUtil.file(parentPath, fileName);
@@ -161,9 +170,10 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         String reader = reader(errorStream);
         int exitCode = process.waitFor();
         if(exitCode!=0){
-            System.out.println("reader:");
-            System.out.println(reader);
-            throw new RuntimeException("编译失败");
+//            System.out.println("reader:");
+//            System.out.println(reader);
+            FileUtil.del(CODE_TEMP_PATH+File.separator+parentFilepath);
+            throw new RuntimeException("编译失败:"+reader);
         }
         return parentFilepath.toString();
     }

@@ -15,8 +15,12 @@ import com.github.dockerjava.api.exception.BadRequestException;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import javax.rmi.CORBA.Util;
 import java.io.Closeable;
 import java.io.File;
@@ -27,18 +31,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-
+@Component("DockerJavaJudgeRunCode")
 public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
 
 
-//    @Resource
+
     private static DockerClient staticDockerClient;
 
     static {
-        staticDockerClient =connectDocker();
+//        staticDockerClient =connectDocker();
     }
 
-
+    @Autowired
+    public  void setStaticDockerClient(DockerClient dockerClient) {
+        DockerJavaJudgeRunCode.staticDockerClient = dockerClient;
+    }
 
     public static DockerClient connectDocker(){
         DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://127.0.0.1:2375").build();
@@ -275,15 +282,17 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
             ExecStartResultCallback execStartResultCallback = new ExecStartResultCallback(){
                 @Override
                 public void onNext(Frame frame) {
-//                    System.out.println("执行结果："+new String(frame.getPayload()));
+                    String resStr = new String(frame.getPayload(),StandardCharsets.UTF_8);
+//                    System.out.println("执行结果："+resStr+":a");
                     if (frame.getStreamType().equals(StreamType.STDERR)) {
                         //错误信息
-                        message.setErrMessage(message.getErrMessage()+new String(frame.getPayload()));
+
+                        message.setErrMessage(message.getErrMessage()+resStr);
 
                     }
                     else {
                         //正常信息
-                        message.setMessage(message.getMessage()+new String(frame.getPayload()));
+                        message.setMessage(message.getMessage()+resStr);
                     }
                     unFinish[0] =false;
                     super.onNext(frame);
@@ -318,6 +327,18 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
                 }
                 message.setExecuteTime(stopWatch.getTotalTimeMillis());
                 message.setMemoryUsage(maxMemory[0]/1024);
+
+                String resStr = message.getMessage();
+                if(resStr.endsWith("\n")){
+                    resStr=resStr.substring(0,resStr.lastIndexOf("\n"));
+                }
+                message.setMessage(resStr);
+
+                resStr = message.getErrMessage();
+                if(resStr.endsWith("\n")){
+                    resStr=resStr.substring(0,resStr.lastIndexOf("\n"));
+                }
+                message.setErrMessage(resStr);
                 executeMessageList.add(message);
             } catch (InterruptedException e) {
 

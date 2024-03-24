@@ -1,13 +1,10 @@
 package com.anml.codesanbox.Judge.java;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class Main {
     public static void main(String[] args) {
-        if(args.length<2){
-            System.out.println("hello world");
-        }
-        Integer a=Integer.parseInt(args[0]);
-        Integer b=Integer.parseInt(args[1]);
-
-        System.out.println(a+b);
+        String resStr= StringUtils.join("a","\n","c");
+        System.out.println(resStr+":sdf");
     }
 }
