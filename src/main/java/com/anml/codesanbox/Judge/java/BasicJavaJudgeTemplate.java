@@ -7,6 +7,7 @@ import com.anml.codesanbox.Judge.CodeJudgeResponse;
 import com.anml.codesanbox.Judge.JudgeService;
 
 import com.anml.codesanbox.Judge.docker.ExecuteMessage;
+import com.anml.codesanbox.Judge.enums.RunStatus;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -72,12 +73,12 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
             try {
                 compileClass = compileCode(query.getCode());
             } catch (Exception e) {
-                codeJudgeResponse.setCode(501);
-                codeJudgeResponse.setError("编译错误"+e.getMessage());
+                codeJudgeResponse.setCode(RunStatus.CompileError.getCode());
+                codeJudgeResponse.setResult("编译错误"+e.getMessage());
                 return codeJudgeResponse;
             }
 
-            codeJudgeResponse.setCode(200);
+            codeJudgeResponse.setCode(RunStatus.Accepted.getCode());
             //执行代码
             runCode(compileClass, query, codeJudgeResponse);
         } catch (Exception e) {
@@ -94,6 +95,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
     }
 
     public void runCode(String compileClass, CodeJudeQuery query, CodeJudgeResponse codeJudgeResponse) {
+        codeJudgeResponse.setExecuteMessageList(new ArrayList<>());
         ProcessBuilder processBuilder = new ProcessBuilder();
         for (String inputStr : query.getInputList()) {
             String[] inputList = inputStr.split(" ");
@@ -101,7 +103,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
             List<String> commandStr = getCommandStr(compileClass, list);
             processBuilder.command(commandStr);
 
-            codeJudgeResponse.setOutPutStrList(new ArrayList<>());
+
             handerRunCode(processBuilder, codeJudgeResponse);
         }
 
@@ -130,7 +132,8 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
             errorInputStream.close();
             inputStream.close();
         } catch (IOException e) {
-            codeJudgeResponse.setError("执行代码出错"+e.getMessage());
+            codeJudgeResponse.setResult("执行代码出错"+e.getMessage());
+            codeJudgeResponse.setCode(RunStatus.RunErr.getCode());
         }
     }
 
@@ -153,7 +156,8 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         UUID parentFilepath = UUID.randomUUID();
         String parentPath = CODE_TEMP_PATH+File.separator+ parentFilepath;
 
-        String fileName= "Main.java";        if(!FileUtil.exist(parentPath)){
+        String fileName= "Main.java";
+        if(!FileUtil.exist(parentPath)){
             FileUtil.mkdir(parentPath);
         }
         File file = FileUtil.file(parentPath, fileName);

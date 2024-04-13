@@ -15,7 +15,7 @@ public class TestJudge {
         String code = ResourceUtil.readStr("Main.java", StandardCharsets.UTF_8);
 
 
-        JudgeTypeEnum type=JudgeTypeEnum.Docker;
+        JudgeTypeEnum type=JudgeTypeEnum.NATIVE;
         JudgeService judgeService=JudgeServiceStrategy.getJudgeService(type);
         if(judgeService==null){
             throw new NullPointerException("无法获取代码沙箱");
