@@ -1,5 +1,6 @@
 package com.anml.codesanbox.Judge.java;
 
+import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import com.anml.codesanbox.Judge.CodeJudeQuery;
@@ -78,12 +79,22 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
                 return codeJudgeResponse;
             }
 
-            codeJudgeResponse.setCode(RunStatus.Accepted.getCode());
+
             //执行代码
             runCode(compileClass, query, codeJudgeResponse);
+            codeJudgeResponse.setCode(RunStatus.Accepted.getCode());
         } catch (Exception e) {
-            throw new RuntimeException(e);
-        }finally {
+            e.printStackTrace();
+            if(codeJudgeResponse.getCode()==null){
+                codeJudgeResponse.setCode(RunStatus.SystemError.getCode());
+            }
+            if(codeJudgeResponse.getResult()==null){
+                codeJudgeResponse.setResult("编译错误"+e.getMessage());
+            }
+            return codeJudgeResponse;
+        }
+
+        finally {
             //delete file compileClass
             FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
         }
@@ -113,7 +124,10 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
     private static void handerRunCode(ProcessBuilder processBuilder, CodeJudgeResponse codeJudgeResponse) {
         processBuilder.redirectErrorStream(false);
         try {
+
+            StopWatch stopWatch = new StopWatch();
             //启动进程
+            stopWatch.start();
             Process start = processBuilder.start();
             //获取输入流
             InputStream inputStream = start.getInputStream();
@@ -122,11 +136,12 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
 //            System.out.println("结果："+stream);
             InputStream errorInputStream = start.getErrorStream();
             String errStream = reader(errorInputStream);
-
+            stopWatch.stop();
             ExecuteMessage message = new ExecuteMessage();
 
             message.setMessage(stream);
             message.setErrMessage(errStream);
+            message.setExecuteTime(stopWatch.getTotalTimeMillis());
             codeJudgeResponse.addExecuteMessage(message);
 
             errorInputStream.close();

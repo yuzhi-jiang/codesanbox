@@ -4,4 +4,4 @@ server:
     context-path: /api
 
 judge:
-  type: navite
+  type: docker

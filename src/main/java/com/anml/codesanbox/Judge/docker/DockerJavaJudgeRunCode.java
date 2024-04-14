@@ -7,6 +7,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.json.JSONUtil;
 import com.anml.codesanbox.Judge.CodeJudeQuery;
 import com.anml.codesanbox.Judge.CodeJudgeResponse;
+import com.anml.codesanbox.Judge.enums.RunStatus;
 import com.anml.codesanbox.Judge.java.BasicJavaJudgeTemplate;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -167,6 +168,8 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
 
 
         if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1024*1024))<0){
+            codeJudgeResponse.setCode(RunStatus.OutOfMemory.getCode());
+            codeJudgeResponse.setResult("Minimum memory limit allowed is 6MB");
             throw new BadRequestException("Status 400: Minimum memory limit allowed is 6MB");
         }
 
