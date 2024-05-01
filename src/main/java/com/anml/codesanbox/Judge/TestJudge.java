@@ -24,7 +24,7 @@ public class TestJudge {
         codeJudeQuery.setMemoryLimit(1024  * 1024 * 6);
         codeJudeQuery.setTimeLimit(50*2*1000);
         codeJudeQuery.setCode(code);
-        codeJudeQuery.setInputList(Arrays.asList("1 1","2 3"));
+        codeJudeQuery.setInputList(Arrays.asList("[1,-1,-3,-2,3] 3 2"));
         CodeJudgeResponse judge = judgeService.judge(codeJudeQuery);
         System.out.println("judgeInfo：");
         System.out.println(judge);

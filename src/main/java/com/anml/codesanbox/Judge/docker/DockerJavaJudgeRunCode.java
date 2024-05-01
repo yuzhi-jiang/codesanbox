@@ -16,13 +16,9 @@ import com.github.dockerjava.api.exception.BadRequestException;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-import javax.rmi.CORBA.Util;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -167,7 +163,7 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
     public void runCode(String parentFilepath, CodeJudeQuery codeJudeQuery, CodeJudgeResponse codeJudgeResponse) {
 
 
-        if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1024*1024))<0){
+        if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1000*1000))<0){
             codeJudgeResponse.setCode(RunStatus.OutOfMemory.getCode());
             codeJudgeResponse.setResult("Minimum memory limit allowed is 6MB");
             throw new BadRequestException("Status 400: Minimum memory limit allowed is 6MB");
