@@ -7,9 +7,4 @@ judge:
   type: docker
 
 docker:
-  host: tcp://localhost:2375
-
-
-spring:
-  profiles:
-    active: prod
+  serverUrl: tcp://${docker_host}:2375

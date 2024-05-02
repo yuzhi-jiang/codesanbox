@@ -96,7 +96,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
 
         finally {
             //delete file compileClass
-            FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
+//            FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
         }
 
 
@@ -191,7 +191,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         if(exitCode!=0){
 //            System.out.println("reader:");
 //            System.out.println(reader);
-            FileUtil.del(CODE_TEMP_PATH+File.separator+parentFilepath);
+//            FileUtil.del(CODE_TEMP_PATH+File.separator+parentFilepath);
             throw new RuntimeException("编译失败:"+reader);
         }
         return parentFilepath.toString();

@@ -17,6 +17,7 @@ import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.Closeable;
@@ -31,25 +32,33 @@ import java.util.concurrent.TimeUnit;
 @Component("DockerJavaJudgeRunCode")
 public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
 
+    @Value("${docker.serverUrl}")
+    private String serverUrl;
 
-
-    private static DockerClient staticDockerClient;
+    private static volatile DockerClient staticDockerClient;
 
     static {
 //        staticDockerClient =connectDocker();
     }
 
-    @Autowired
+//    @Autowired
     public  void setStaticDockerClient(DockerClient dockerClient) {
         DockerJavaJudgeRunCode.staticDockerClient = dockerClient;
     }
 
-    public static DockerClient connectDocker(){
-        DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://127.0.0.1:2375").build();
-        Info info = dockerClient.infoCmd().exec();
-        String infoStr = JSONUtil.toJsonStr(info);
-        System.out.println("docker的环境信息如下：=================");
-        System.out.println(infoStr);
+    public  DockerClient connectDocker(){
+        DockerClient dockerClient = null;
+        try {
+            dockerClient = DockerClientBuilder.getInstance(serverUrl).build();
+            Info info = dockerClient.infoCmd().exec();
+            String infoStr = JSONUtil.toJsonStr(info);
+            System.out.println("docker的环境信息如下：=================");
+            System.out.println(infoStr);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("连接docker异常");
+            return null;
+        }
         return dockerClient;
     }
    static boolean FIRST_INIT=false;
@@ -159,10 +168,23 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
 
     }
 
+
+    private void checkDockerClientConnect(){
+        if(staticDockerClient==null){
+            synchronized (DockerJavaJudgeRunCode.class){
+                if(staticDockerClient==null){
+                    staticDockerClient = connectDocker();
+                }
+            }
+        }
+        if(staticDockerClient==null){
+            throw new RuntimeException("docker连接失败");
+        }
+    }
+
     @Override
     public void runCode(String parentFilepath, CodeJudeQuery codeJudeQuery, CodeJudgeResponse codeJudgeResponse) {
-
-
+        checkDockerClientConnect();
         if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1000*1000))<0){
             codeJudgeResponse.setCode(RunStatus.OutOfMemory.getCode());
             codeJudgeResponse.setResult("Minimum memory limit allowed is 6MB");
@@ -328,14 +350,21 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
                 message.setMemoryUsage(maxMemory[0]/1024);
 
                 String resStr = message.getMessage();
+                System.out.println("输出结果是："+resStr);
                 if(resStr.endsWith("\n")){
                     resStr=resStr.substring(0,resStr.lastIndexOf("\n"));
                 }
+                if(resStr.endsWith("\r\n")){
+                    resStr=resStr.substring(0,resStr.lastIndexOf("\r\n"));
+                }
                 message.setMessage(resStr);
-
+                System.out.println("换行后结果是："+resStr);
                 resStr = message.getErrMessage();
                 if(resStr.endsWith("\n")){
                     resStr=resStr.substring(0,resStr.lastIndexOf("\n"));
+                }
+                if(resStr.endsWith("\r\n")){
+                    resStr=resStr.substring(0,resStr.lastIndexOf("\r\n"));
                 }
                 message.setErrMessage(resStr);
                 executeMessageList.add(message);
@@ -347,7 +376,7 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
             }
         }
         codeJudgeResponse.setExecuteMessageList(executeMessageList);
-        dockerClient.removeContainerCmd(containerId).withForce(true).exec();
+//        dockerClient.removeContainerCmd(containerId).withForce(true).exec();
 
     }
 }

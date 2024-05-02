@@ -12,17 +12,22 @@ import org.springframework.context.annotation.Bean;
 public class CodesanboxApplication {
 
     public static void main(String[] args) {
-        dockerClient();
+//        dockerClient();
         SpringApplication.run(CodesanboxApplication.class, args);
     }
 
-    @Bean
+//    @Bean
     public static DockerClient dockerClient(){
-        DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://127.0.0.1:2375").build();
-        Info info = dockerClient.infoCmd().exec();
-        String infoStr = JSONUtil.toJsonStr(info);
-        System.out.println("docker的环境信息如下：=================");
-        System.out.println(infoStr);
-        return dockerClient;
+        try {
+            DockerClient dockerClient = DockerClientBuilder.getInstance("tcp://127.0.0.1:2375").build();
+            Info info = dockerClient.infoCmd().exec();
+            String infoStr = JSONUtil.toJsonStr(info);
+            System.out.println("docker的环境信息如下：=================");
+            System.out.println(infoStr);
+            return dockerClient;
+        }catch (Exception e){
+            System.out.println("docker环境未启动，请先启动docker环境");
+            return null;
+        }
     }
 }
