@@ -10,6 +10,7 @@ import com.anml.codesanbox.Judge.JudgeService;
 import com.anml.codesanbox.Judge.docker.ExecuteMessage;
 import com.anml.codesanbox.Judge.enums.RunStatus;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ import java.util.UUID;
  * 模板方法
  * 实现 judgeService 接口
  */
-
+@Slf4j
 public abstract class BasicJavaJudgeTemplate implements JudgeService {
 
     private static Logger logger = LoggerFactory.getLogger(BasicJavaJudgeTemplate.class);
@@ -96,12 +97,13 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
 
         finally {
             //delete file compileClass
-//            FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
+            FileUtil.del(CODE_TEMP_PATH+File.separator+compileClass);
         }
 
 
 //        System.out.println("judeinfo");
 //        System.out.println(codeJudgeResponse);
+        log.info("res judeinfo:{}",codeJudgeResponse);
         return codeJudgeResponse;
     }
 
@@ -191,7 +193,7 @@ public abstract class BasicJavaJudgeTemplate implements JudgeService {
         if(exitCode!=0){
 //            System.out.println("reader:");
 //            System.out.println(reader);
-//            FileUtil.del(CODE_TEMP_PATH+File.separator+parentFilepath);
+            FileUtil.del(CODE_TEMP_PATH+File.separator+parentFilepath);
             throw new RuntimeException("编译失败:"+reader);
         }
         return parentFilepath.toString();

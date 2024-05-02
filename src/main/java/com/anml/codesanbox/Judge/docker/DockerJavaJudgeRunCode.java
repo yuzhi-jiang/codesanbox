@@ -185,7 +185,7 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
     @Override
     public void runCode(String parentFilepath, CodeJudeQuery codeJudeQuery, CodeJudgeResponse codeJudgeResponse) {
         checkDockerClientConnect();
-        if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1000*1000))<0){
+        if(NumberUtil.compare(codeJudeQuery.getMemoryLimit(),(6*1024*1024))<0){
             codeJudgeResponse.setCode(RunStatus.OutOfMemory.getCode());
             codeJudgeResponse.setResult("Minimum memory limit allowed is 6MB");
             throw new BadRequestException("Status 400: Minimum memory limit allowed is 6MB");
@@ -376,7 +376,7 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
             }
         }
         codeJudgeResponse.setExecuteMessageList(executeMessageList);
-//        dockerClient.removeContainerCmd(containerId).withForce(true).exec();
+        dockerClient.removeContainerCmd(containerId).withForce(true).exec();
 
     }
 }
