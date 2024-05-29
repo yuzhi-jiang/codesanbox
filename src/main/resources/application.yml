@@ -7,9 +7,16 @@ judge:
   type: docker
 
 docker:
-  host: tcp://localhost:2375
+  serverUrl: tcp://localhost:2375
 
 
 spring:
   profiles:
     active: prod
+
+config:
+  credentials:
+    - accessKey: SmQttfUKSHASEiVYCVwX
+      secretKey: llGMVT2Iz87uROZbgygO1tSMFSCRVwFUs5hNefub
+    - accessKey: LqaM0T1pBV9Ic7b6bfHN
+      secretKey: rqqHwhcSEH90wVWre4r6kr9gskItZoTrNDY3h2SF
