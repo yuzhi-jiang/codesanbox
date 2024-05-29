@@ -1,0 +1,1 @@
+java -jar D:\projects\ideaprojects\codesanbox\target\codesanbox-0.0.1-SNAPSHOT.jar --docker_host=127.0.0.1
