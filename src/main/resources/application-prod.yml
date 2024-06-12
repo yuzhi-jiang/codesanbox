@@ -5,6 +5,6 @@ server:
 
 judge:
   type: docker
-
+docker_host: 127.0.0.1
 docker:
   serverUrl: tcp://${docker_host}:2375
