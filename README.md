@@ -1,29 +1,88 @@
 # CodeSandbox
 
-CodeSandbox是一个在线代码沙盒平台，可以帮助用户轻松运行、分享和调试多种编程语言的代码。无需安装任何开发环境，只需打开浏览器，就可以开始编写和运行代码。对于初学者和教育工作者来说，CodeSandbox是一个极其方便的工具，可以快速尝试和学习编程知识。
+CodeSandbox 是一个多语言代码沙盒平台，旨在提供安全、可控的环境来运行代码。您可以使用它来运行各种编程语言的代码，并且能够对内存和运行时间进行限制，以确保安全性和稳定性。
 
-## 主要功能
-- **多语言支持**：CodeSandbox支持多种流行的编程语言，包括Java、C++等，为用户提供了更多的选择。
-- **安全运行**：用户可以在CodeSandbox平台上安全地运行自己的代码，无需担心可能造成的系统安全问题。
-- **限制运行资源**：用户可以根据需要设置代码运行的内存和时间限制，保证代码运行在合适的环境中。
-- **API接口**：CodeSandbox提供对外API接口，用户可以通过接口来运行代码，实现自动化操作。
-- **安全保障**：API接口使用AK（Access Key）和SK（Secret Key）进行加密验证，保护用户数据的安全性。
-  
+## 功能特性
+
+- **多语言支持**：目前支持Java和C++，Python支持正在开发中。
+- **资源限制**：限制代码的内存使用和运行时间，防止资源耗尽。
+- **API接口**：提供简洁的API接口，方便外部系统调用。
+- **安全性**：API接口使用Access Key（AK）和Secret Key（SK）进行加密，确保数据安全。
+
 ## 完成进度
-- [x] Java实现
-- [ ] C++实现（进行中）
-- [ ] Python实现（进行中）
 
-## 使用说明
-1. 访问CodeSandbox平台网站
-2. 选择想要尝试的编程语言
-3. 编写代码并运行
-4. 根据需要设置内存和时间限制
-5. 调试代码并查看运行结果
-6. 如需对接API接口，可参考文档进行接口调用
+- [x] **Java**
+- [x] **C++** （开发中）
+- [ ] **Python**（开发中）
 
-## 注意事项
-- 请勿将CodeSandbox用于商业用途
-- 注意保护AK和SK的安全，避免泄露
+## 快速开始
 
-欢迎使用CodeSandbox，快来体验在线编程的便捷与乐趣！
+### 环境配置
+
+1. 克隆项目到本地：
+
+    ```bash
+    git clone https://github.com/your-repo/codesandbox.git
+    cd codesandbox
+    ```
+
+2. 配置 `application.yml` 文件，设置服务器端口和安全密钥：
+
+    ```yaml
+    server:
+      port: 8080
+    security:
+      ak: your-access-key
+      sk: your-secret-key
+    ```
+
+
+
+
+
+# CodeSandbox API 使用文档
+
+## 运行代码接口 `/run`
+
+该接口用于运行指定的代码，并限制其运行时间和内存使用。
+
+### 请求方法
+
+`POST /run`
+
+### 请求头参数
+
+- `x-access-key`: 您的 Access Key，用于认证。
+- `x-sign`: 请求签名，用于确保请求的完整性和安全性。
+
+### 请求体参数
+
+请求体应为JSON格式，参数如下：
+
+- `code` (字符串，必填): 要运行的代码。
+- `language` (字符串，可选): 代码的编程语言。如果未指定，系统将尝试自动检测。
+- `inputList` (字符串列表，可选): 运行代码时的输入列表。
+- `timeLimit` (长整型，必填): 代码运行的时间限制，单位为毫秒。
+- `memoryLimit` (长整型，必填): 代码运行的内存限制，单位为字节。
+
+### 示例请求
+
+以下是一个完整的请求示例，展示了如何使用该接口：
+
+```http
+POST /run HTTP/1.1
+Host: api.codesandbox.com
+Content-Type: application/json
+x-access-key: your-access-key
+x-sign: your-sign
+
+{
+  "code": "public class Main { public static void main(String[] args) { System.out.println(\"Hello, World!\"); } }",
+  "language": "java",
+  "inputList": ["input1", "input2"],
+  "timeLimit": 2000,
+  "memoryLimit": 1048576
+}
+```
+
+
