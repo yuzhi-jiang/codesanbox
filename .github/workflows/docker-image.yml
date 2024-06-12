@@ -14,9 +14,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - run: |
-        pwd
-        ls
     - run: mvn package
+
+    - name: 'Login to GitHub Container Registry'
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+              
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      run: |
+        docker build . --file Dockerfile --tag ghcr.io/yuzhi-jiang/codesanbox:latest
+        docker push ghcr.io/yuzhi-jiang/codesanbox:latest
