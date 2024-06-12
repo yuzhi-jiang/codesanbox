@@ -4,7 +4,7 @@ FROM openjdk:8-jdk-alpine
 WORKDIR /app
 
 # 将jar文件复制到容器内的/app目录下
-COPY target/codesanbox-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY ./target/codesanbox-0.0.1-SNAPSHOT.jar /app/app.jar
 
 
 ARG DOCKER_HOST
