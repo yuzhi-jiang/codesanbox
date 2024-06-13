@@ -12,4 +12,5 @@ ARG DOCKER_HOST
 ENV DOCKER_HOST=$DOCKER_HOST
 
 # 设置容器启动时执行的命令
-ENTRYPOINT ["java","-jar","app.jar","--spring.profiles.active=prod","-c"]
+#ENTRYPOINT ["java","-jar","app.jar","--spring.profiles.active=prod","-c"]
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","app.jar","--spring.profiles.active=prod","-c"]
