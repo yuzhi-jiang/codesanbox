@@ -49,6 +49,7 @@ public class DockerJavaJudgeRunCode extends BasicJavaJudgeTemplate {
     public  DockerClient connectDocker(){
         DockerClient dockerClient = null;
         try {
+            System.out.println("serverUrl:"+serverUrl);
             dockerClient = DockerClientBuilder.getInstance(serverUrl).build();
             Info info = dockerClient.infoCmd().exec();
             String infoStr = JSONUtil.toJsonStr(info);
